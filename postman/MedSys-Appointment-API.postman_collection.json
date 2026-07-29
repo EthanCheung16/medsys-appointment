@@ -1,0 +1,223 @@
+{
+  "info": {
+    "_postman_id": "b2f4a1c8-7d3e-4a52-9c61-0f8d2ab37e10",
+    "name": "MedSys Appointment API - Sprint 1 acceptance",
+    "description": "Consumer-side acceptance checks for the three business rules of the MedSys clinic appointment module (GitHub Issue #1 and #3).\n\nRule 1 - all booking fields are mandatory.\nRule 2 - an appointment cannot be made in the past.\nRule 3 - a doctor cannot be double-booked for the same time slot.\n\nThe collection is versioned with the service so that the acceptance examples cannot drift away from the API (see report section 4.6).\n\nHow to run:\n1. mvn spring-boot:run\n2. Import this file into Postman\n3. Run the collection (Runner) - all assertions must pass\n\nAll data is synthetic. No patient information is used.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "doctorId",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "slot",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Book appointment - valid request succeeds",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Generate a fresh future slot for every collection run so the demo is repeatable.",
+              "const future = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);",
+              "future.setMilliseconds(0);",
+              "pm.collectionVariables.set('slot', future.toISOString().slice(0, 19));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "",
+              "pm.test('Response envelope reports success (code = 1)', function () {",
+              "    pm.expect(body.code).to.eql(1);",
+              "});",
+              "",
+              "pm.test('Confirmation message is returned', function () {",
+              "    pm.expect(body.message).to.eql('Appointment booked successfully');",
+              "});",
+              "",
+              "pm.test('Appointment is created with status BOOKED', function () {",
+              "    pm.expect(body.resultData).to.not.eql(null);",
+              "    pm.expect(body.resultData.status).to.eql('BOOKED');",
+              "    pm.expect(body.resultData.patientName).to.eql('Alice Tan');",
+              "    pm.expect(body.resultData.id).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"patientName\": \"Alice Tan\",\n  \"time\": \"{{slot}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ]
+        },
+        "description": "Happy path for GitHub Issue #1. Books a future slot for doctor {{doctorId}}."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Double booking - same doctor and slot is rejected",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 OK with a business-level rejection', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "",
+              "pm.test('Response envelope reports failure (code = 0)', function () {",
+              "    pm.expect(body.code).to.eql(0);",
+              "});",
+              "",
+              "pm.test('Rejection message names the conflicting doctor', function () {",
+              "    pm.expect(body.message).to.include('already has an appointment');",
+              "    pm.expect(body.message).to.include(pm.collectionVariables.get('doctorId'));",
+              "});",
+              "",
+              "pm.test('No appointment is returned', function () {",
+              "    pm.expect(body.resultData).to.eql(null);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"patientName\": \"Bob Lee\",\n  \"time\": \"{{slot}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ]
+        },
+        "description": "GitHub Issue #3. Reuses the slot booked by request 1 with a different patient; the doctor must not be double-booked."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Past-dated booking is refused",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 OK with a business-level rejection', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const body = pm.response.json();",
+              "",
+              "pm.test('Response envelope reports failure (code = 0)', function () {",
+              "    pm.expect(body.code).to.eql(0);",
+              "});",
+              "",
+              "pm.test('Expected rejection message is returned', function () {",
+              "    pm.expect(body.message).to.eql('Cannot book an appointment in the past');",
+              "});",
+              "",
+              "pm.test('No appointment is returned', function () {",
+              "    pm.expect(body.resultData).to.eql(null);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"patientName\": \"Bob Lee\",\n  \"time\": \"2020-01-01T09:30:00\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/appointments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "appointments"
+          ]
+        },
+        "description": "GitHub Issue #1 acceptance criterion: a request for a past date must be refused with the documented message."
+      },
+      "response": []
+    }
+  ]
+}

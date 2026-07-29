@@ -1,0 +1,49 @@
+name: CI
+
+# 触发条件：push 到 main 或任意 feature 分支，以及向 main 发起 / 更新 Pull Request。
+# 这样 feature 分支一 push 就能看到检查结果，PR 页面也会显示同一个 check。
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 这个 job 的名字就是 PR 页面上显示的 required check 名字。
+  # 在 Settings > Branches > Branch protection rules 里把它设为 required，
+  # 检查变红时 PR 的 Merge 按钮就会被锁住（报告 Figure 7 / Figure 8(c) 的证据）。
+  verify:
+    name: Maven verify (JUnit + JaCoCo + SpotBugs)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # 与开发者本地完全相同的一条命令：
+      # 编译 -> JUnit 5 测试 -> JaCoCo 覆盖率报告与门禁 -> SpotBugs 静态分析 -> 打包 JAR。
+      # 任何一环失败，这一步即变红，required check 随之变红。
+      - name: Build, test and analyse
+        run: mvn -B verify
+
+      # 把验证证据保留下来，方便截图与合规审计（构建失败时同样上传）。
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-reports
+          if-no-files-found: ignore
+          path: |
+            target/site/jacoco/
+            target/spotbugs.html
+            target/spotbugsXml.xml
+            target/surefire-reports/

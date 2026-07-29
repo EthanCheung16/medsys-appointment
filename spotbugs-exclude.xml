@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs suppression filter - MedSys Appointment Module
+
+  治理规则（报告 Section 4.6）：豁免是一次被评审过的工程决定，不是为了把仪表盘刷成零告警。
+  每一条 <Match> 都必须写明：
+    (1) 豁免的是哪个 bug pattern
+    (2) 作用范围
+    (3) 为什么该告警在本上下文中不可行动
+  新增豁免需要 Compliance & QA 在 Pull Request 中批准。
+-->
+<FindBugsFilter>
+
+    <!--
+      EI_EXPOSE_REP / EI_EXPOSE_REP2
+      范围  : com.medsys.appointment.entity
+      理由  : Appointment 与 ResultRet 是由 Jackson 序列化的数据传输对象，访问器有意直接
+              返回内部值；它们承载的字段（Long / String / LocalDateTime / enum）本身不可变，
+              做防御性拷贝只会增加噪音而不会降低风险。
+      评审  : R&D 与 Compliance & QA，Sprint 1
+    -->
+    <Match>
+        <Package name="com.medsys.appointment.entity"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+</FindBugsFilter>
