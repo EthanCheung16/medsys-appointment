@@ -79,8 +79,14 @@ public class AppointmentService {
         if (appointment == null) {
             return ResultRet.errorResult("Appointment not found: " + id);
         }
+        String previousStatus = null;
+        if (appointment.getStatus() == AppointmentStatus.BOOKED) {
+            previousStatus = appointment.getStatus().name();
+        }
         appointment.setStatus(AppointmentStatus.CANCELLED);
-        return ResultRet.okResult("Appointment cancelled successfully", appointment);
+        return ResultRet.okResult(
+                "Appointment cancelled successfully (was "
+                        + previousStatus.toLowerCase() + ")", appointment);
     }
 
     public synchronized ResultRet findAll() {
