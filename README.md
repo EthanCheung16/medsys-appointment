@@ -1,7 +1,6 @@
 # MedSys Appointment Module
 
-A clinic appointment booking service built for the **MedSys Solutions** case study
-(CT078-3-M Software Engineering Support Environments).
+A clinic appointment booking service built for the **MedSys Solutions** case study.
 
 Spring Boot 3.3 REST service on Java 17, built with Maven. The repository demonstrates a
 Scrum + DevOps workflow in which every change travels from a tracked requirement through
