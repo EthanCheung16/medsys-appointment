@@ -24,10 +24,20 @@ public class AppointmentService {
 
     /**
      * Books an appointment for a patient with a doctor at a given time.
-     * Business rules:
-     * 1. All fields are required.
-     * 2. The appointment time must be in the future.
-     * 3. A doctor cannot be double-booked for the same time slot.
+     *
+     * Business rules and the response each one produces:
+     * 1. All fields are required
+     *    code 0, "doctorId, patientName and time are required"
+     * 2. The appointment time must be in the future
+     *    code 0, "Cannot book an appointment in the past"
+     * 3. A doctor cannot be double-booked for the same time slot
+     *    code 0, "Doctor {id} already has an appointment at {time}"
+     *
+     * On success the method returns code 1 with the message
+     * "Appointment booked successfully" and the created appointment.
+     *
+     * A cancelled appointment releases its slot, so the same doctor and
+     * time can be booked again afterwards.
      */
     public synchronized ResultRet book(Long doctorId, String patientName, LocalDateTime time) {
         // Rule 1: all booking fields are mandatory.
