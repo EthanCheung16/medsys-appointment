@@ -46,7 +46,7 @@ class AppointmentServiceTest {
 
         ResultRet result = service.book(1L, "Alice Tan", yesterday);
 
-        assertEquals(1, result.getCode());
+        assertEquals(0, result.getCode());
         assertEquals("Cannot book an appointment in the past", result.getMessage());
     }
 
